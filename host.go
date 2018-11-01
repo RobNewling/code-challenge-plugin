@@ -125,7 +125,7 @@ func runTests(port int) error {
 		},
 		&standardTestCase{
 			n:               "garbage",
-			d:               `This test checks if any types have been inferred from a very unclean and invalid data set.`,
+			d:               `This test checks if any types have been inferred from a very unclean and invalid data set. There is no expectation that any plugin will correctly infer and parse all of these columns, but we're interested in any strategies you might have.'`,
 			glob:            filepath.Join(pwd, "./data/garbage.csv"),
 			expectedCount:   10,
 			publishSchema:   schemaGarbage,
