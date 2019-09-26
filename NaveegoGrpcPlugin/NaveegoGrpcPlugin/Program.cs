@@ -13,7 +13,13 @@ namespace NaveegoGrpcPlugin
     {
         public static void Main(string[] args)
         {
+            AppDomain.CurrentDomain.ProcessExit += ProcessExitHandler;
             CreateHostBuilder(args).Build().Run();
+        }
+
+        private static void ProcessExitHandler(object sender, EventArgs e)
+        {
+            Console.WriteLine("Shutting down");
         }
 
         // Additional configuration is required to successfully run gRPC on macOS.
