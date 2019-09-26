@@ -8,6 +8,8 @@ using Plugin;
 using Ganss.IO;
 using System.IO;
 using CsvHelper;
+using Google.Protobuf.Collections;
+using System.Text.Json;
 
 namespace NaveegoGrpcPlugin
 {
@@ -26,6 +28,16 @@ namespace NaveegoGrpcPlugin
             var examine = request.Settings.FileGlob;
             LookForFiles(examine);
             return Task.FromResult(new DiscoverResponse { Schemas = { discoveredSchemas } });
+        }
+
+        public override async Task Publish(PublishRequest request, IServerStreamWriter<PublishRecord> responseStream, ServerCallContext context)
+        {
+            var filePaths = request.Schema.Settings.Split(';');
+            var props = request.Schema.Properties;
+            foreach (var file in filePaths)
+            {
+                await GetDataToStream(file, props, responseStream);
+            }
         }
 
         private void LookForFiles(string fileGlob)
@@ -126,5 +138,34 @@ namespace NaveegoGrpcPlugin
 
             return newProps;
         }
+
+        private async Task GetDataToStream(string filePath, RepeatedField<Property> props, IServerStreamWriter<PublishRecord> responseStream)
+        {
+            try
+            {
+                using (var reader = new StreamReader(filePath))
+                using (var csv = new CsvReader(reader))
+                {
+
+                    foreach (var record in csv.GetRecords<dynamic>())
+                    {
+                        var fullRecord = new List<string>();
+                        foreach (KeyValuePair<string, object> col in record)
+                        {
+                            fullRecord.Add(col.Value.ToString());
+                        }
+
+                        var data = JsonSerializer.Serialize(fullRecord);
+                        await responseStream.WriteAsync(new PublishRecord { Data = data, Invalid = false });
+                    }
+
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error opening csv");
+            }
+        }
+
     }
 }
