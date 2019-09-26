@@ -5,6 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="12.1.2" />
+    <PackageReference Include="Glob.cs" Version="4.0.37" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.23.1" />
   </ItemGroup>
 
