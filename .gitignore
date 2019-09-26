@@ -3,3 +3,8 @@ goplugin/
 bin/
 .log
 **/node_modules/
+NaveegoGrpcPlugin/NaveegoGrpcPlugin/obj/Debug/netcoreapp3.0/
+
+NaveegoGrpcPlugin/.vs/NaveegoGrpcPlugin/v16/
+
+NaveegoGrpcPlugin/NaveegoGrpcPlugin/obj/
