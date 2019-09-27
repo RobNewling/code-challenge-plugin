@@ -7,59 +7,83 @@ namespace NaveegoGrpcPlugin
 {
     public class Types
     {
-        public bool String { get; set; }
-        public bool Integer { get; set; }
-        public bool Number { get; set; }
-        public bool Datetime { get; set; }
-        public bool Boolean { get; set; }
+        public string ColumnName { get; set; }
+        public int String { get; set; }
+        public int Integer { get; set; }
+        public int Number { get; set; }
+        public int Datetime { get; set; }
+        public int Boolean { get; set; }
 
-        private string _value;
-        private bool foundType;
+        private bool typeFound;
 
-        public Types(string value)
+        public Types(string columnName, string value)
         {
-            _value = value;
-            foundType = false;
-            IsNumber();
-            IsInt();
-            IsDatetime();
-            IsBoolean();
-            
-            if (!Integer && !Number && !Datetime && !Boolean)
+            ColumnName = columnName;
+            DetectTypes(value);
+        }
+
+        public void DetectTypes(string value)
+        {
+            typeFound = false;
+            VoteForNumber(value);
+            VoteForInt(value);
+            VoteForDatetime(value);
+            VoteForBoolean(value);
+            if (!typeFound)
             {
-                //if nothing else, it's a string
-                String = true;
+                VoteForString();
             }
         }
 
 
-        private void IsNumber()
+        private void VoteForNumber(string value)
         {
             decimal decimalCheck;
-            decimal.TryParse(_value, out decimalCheck);
-            Number = decimalCheck != 0 ? true : false; 
+            decimal.TryParse(value, out decimalCheck);
+            if (decimalCheck != 0)
+            {
+                Number = Number + 1;
+                typeFound = true;
+            }
         }
 
-        private void IsInt()
+        private void VoteForInt(string value)
         {
             int integerCheck;
-            int.TryParse(_value, out integerCheck);
-            Integer = integerCheck != 0 ? true : false;
+            int.TryParse(value, out integerCheck);
+            if (integerCheck != 0)
+            {
+                Integer = Integer + 1;
+                typeFound = true;
+            }
         }
 
 
-        private void IsDatetime()
+        private void VoteForDatetime(string value)
         {
             DateTime datetimeCheck;
-            DateTime.TryParse(_value, out datetimeCheck);
-            Datetime = datetimeCheck != DateTime.MinValue ? true : false;
+            DateTime.TryParse(value, out datetimeCheck);
+            if (datetimeCheck != DateTime.MinValue)
+            {
+                Datetime = Datetime + 1;
+                typeFound = true;
+            }
         }
 
-        private void IsBoolean()
+        private void VoteForBoolean(string value)
         {
             bool booleanCheck;
-            bool.TryParse(_value, out booleanCheck);
-            Boolean = booleanCheck;
+            bool.TryParse(value, out booleanCheck);
+            if (booleanCheck)
+            {
+                Boolean = Boolean + 1;
+                typeFound = true;
+            }
+        }
+
+        private void VoteForString()
+        {
+            String = String + 1;
         }
 
     }

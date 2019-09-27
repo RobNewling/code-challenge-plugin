@@ -131,12 +131,24 @@ namespace NaveegoGrpcPlugin
                 csv.ReadHeader();
 
                 headers = csv.Context.HeaderRecord;
+                List<Types> types = new List<Types>();
                 foreach (var record in csv.GetRecords<dynamic>())
                 {
-                    List<Types> types = new List<Types>();
+                    
                     foreach (KeyValuePair<string, object> col in record)
                     {
-                        types.Add(new Types(col.Value.ToString()));
+                        var colName = col.Key.ToString();
+                        var field = col.Value.ToString();
+                        if (types.Where(w => w.ColumnName == colName).Any())
+                        {
+                            var colType = types.Where(w => w.ColumnName == colName).First();
+                            colType.DetectTypes(field);
+                        }
+                        else
+                        {
+                            types.Add(new Types(colName, field));
+                        }
+                        
                     }
 
                 }
