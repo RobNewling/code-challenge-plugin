@@ -73,25 +73,16 @@ namespace NaveegoGrpcPlugin
         {
             try
             {
-                using (var reader = new StreamReader(filePath))
-                using (var csv = new CsvReader(reader))
+
+                var props = CreateProperties(filePath);
+                var foundSchema = CheckForExistingSchema(props);
+                if (foundSchema != null)
                 {
-                    csv.Read();
-                    csv.ReadHeader();
-
-                    var headers = csv.Context.HeaderRecord;
-                    var props = CreateProperties(headers);
-                    var foundSchema = CheckForExistingSchema(props);
-                    if (foundSchema != null)
-                    {
-                        AppendFileToSchema(foundSchema, filePath);
-                    }
-                    else
-                    {
-                        discoveredSchemas.Add(CreateSchema(filePath, props));
-                    }
-
-
+                    AppendFileToSchema(foundSchema, filePath);
+                }
+                else
+                {
+                    discoveredSchemas.Add(CreateSchema(filePath, props));
                 }
             }
             catch (Exception e)
@@ -130,16 +121,36 @@ namespace NaveegoGrpcPlugin
             return new Schema { Name = schemaName, Settings = fileName, Properties = { props } };
         }
 
-        private List<Property> CreateProperties(string[] propsToCreate)
+        private List<Property> CreateProperties(string filePath)
         {
+            string[] headers;
+            using (var reader = new StreamReader(filePath))
+            using (var csv = new CsvReader(reader))
+            {
+                csv.Read();
+                csv.ReadHeader();
+
+                headers = csv.Context.HeaderRecord;
+                foreach (var record in csv.GetRecords<dynamic>())
+                {
+                    List<Types> types = new List<Types>();
+                    foreach (KeyValuePair<string, object> col in record)
+                    {
+                        types.Add(new Types(col.Value.ToString()));
+                    }
+
+                }
+            }
+
             List<Property> newProps = new List<Property>();
-            foreach (var header in propsToCreate)
+            foreach (var header in headers)
             {
                 newProps.Add(new Property { Name = header }); // not including Type yet
             }
 
             return newProps;
         }
+
 
         private async Task GetDataToStream(string filePath, RepeatedField<Property> props, IServerStreamWriter<PublishRecord> responseStream)
         {
