@@ -18,8 +18,8 @@ namespace NaveegoGrpcPlugin
         {
 
             Log.Logger = new LoggerConfiguration()
-               .MinimumLevel.Debug()
-               //.MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+               .MinimumLevel.Information()
+               .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
                .Enrich.FromLogContext()
                //.WriteTo.Console()
                .WriteTo.File("PluginLog.txt", rollingInterval: RollingInterval.Day)

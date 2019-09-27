@@ -17,9 +17,11 @@ namespace NaveegoGrpcPlugin
     {
         private readonly ILogger<PluginService> _logger;
         private List<Schema> discoveredSchemas;
+        private readonly char delimiter;
         public PluginService(ILogger<PluginService> logger)
         {
             _logger = logger;
+            delimiter = ';';
             discoveredSchemas = new List<Schema>();
         }
 
@@ -32,7 +34,7 @@ namespace NaveegoGrpcPlugin
 
         public override async Task Publish(PublishRequest request, IServerStreamWriter<PublishRecord> responseStream, ServerCallContext context)
         {
-            var filePaths = request.Schema.Settings.Split(';');
+            var filePaths = request.Schema.Settings.Split(delimiter);
             var props = request.Schema.Properties;
             foreach (var file in filePaths)
             {
@@ -118,7 +120,7 @@ namespace NaveegoGrpcPlugin
 
         private void AppendFileToSchema(Schema schema, string filePath)
         {
-            schema.Settings += ";" + filePath;
+            schema.Settings += delimiter + filePath;
         }
 
         private Schema CreateSchema(string fileName, List<Property> props)
