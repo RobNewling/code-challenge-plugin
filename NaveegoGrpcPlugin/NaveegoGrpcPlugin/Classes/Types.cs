@@ -8,19 +8,36 @@ namespace NaveegoGrpcPlugin
     public class Types
     {
         public string ColumnName { get; set; }
-        public int String { get; set; }
-        public int Integer { get; set; }
-        public int Number { get; set; }
-        public int Datetime { get; set; }
-        public int Boolean { get; set; }
+
+        public Dictionary<Type, int> TypeVotes { 
+            get
+            {
+                return typeDict;
+            }
+        }
 
         private bool typeFound;
+        private Dictionary<Type, int> typeDict;
 
         public Types(string columnName, string value)
         {
+            
             ColumnName = columnName;
+            SetUpTypes();
             DetectTypes(value);
         }
+
+        private void SetUpTypes()
+        {
+            typeDict = new Dictionary<Type, int>();
+            typeDict.Add(typeof(int), 0);
+            typeDict.Add(typeof(decimal), 0);
+            typeDict.Add(typeof(DateTime), 0);
+            typeDict.Add(typeof(bool), 0);
+            typeDict.Add(typeof(string), 0);
+        }
+
+
 
         public void DetectTypes(string value)
         {
@@ -42,7 +59,7 @@ namespace NaveegoGrpcPlugin
             decimal.TryParse(value, out decimalCheck);
             if (decimalCheck != 0)
             {
-                Number = Number + 1;
+                typeDict[typeof(decimal)] = typeDict[typeof(decimal)] + 1;
                 typeFound = true;
             }
         }
@@ -53,7 +70,7 @@ namespace NaveegoGrpcPlugin
             int.TryParse(value, out integerCheck);
             if (integerCheck != 0)
             {
-                Integer = Integer + 1;
+                typeDict[typeof(int)] = typeDict[typeof(int)] + 1;
                 typeFound = true;
             }
         }
@@ -65,7 +82,7 @@ namespace NaveegoGrpcPlugin
             DateTime.TryParse(value, out datetimeCheck);
             if (datetimeCheck != DateTime.MinValue)
             {
-                Datetime = Datetime + 1;
+                typeDict[typeof(DateTime)] = typeDict[typeof(DateTime)] + 1;
                 typeFound = true;
             }
         }
@@ -76,14 +93,30 @@ namespace NaveegoGrpcPlugin
             bool.TryParse(value, out booleanCheck);
             if (booleanCheck)
             {
-                Boolean = Boolean + 1;
+                typeDict[typeof(bool)] = typeDict[typeof(bool)] + 1;
                 typeFound = true;
             }
         }
 
         private void VoteForString()
         {
-            String = String + 1;
+            typeDict[typeof(string)] = typeDict[typeof(string)] + 1;
+        }
+
+        public string TypeNameConvert(Type type)
+        {
+            if (type == typeof(string))
+                return "string";
+            else if (type == typeof(int))
+                return "integer";
+            else if (type == typeof(decimal))
+                return "number";
+            else if (type == typeof(DateTime))
+                return "datetame";
+            else if (type == typeof(bool))
+                return "boolean";
+            else
+                return string.Empty;
         }
 
     }

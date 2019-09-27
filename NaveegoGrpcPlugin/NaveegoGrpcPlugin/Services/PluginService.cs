@@ -124,6 +124,7 @@ namespace NaveegoGrpcPlugin
         private List<Property> CreateProperties(string filePath)
         {
             string[] headers;
+            List<Types> types = new List<Types>();
             using (var reader = new StreamReader(filePath))
             using (var csv = new CsvReader(reader))
             {
@@ -131,7 +132,7 @@ namespace NaveegoGrpcPlugin
                 csv.ReadHeader();
 
                 headers = csv.Context.HeaderRecord;
-                List<Types> types = new List<Types>();
+                
                 foreach (var record in csv.GetRecords<dynamic>())
                 {
                     
@@ -155,9 +156,19 @@ namespace NaveegoGrpcPlugin
             }
 
             List<Property> newProps = new List<Property>();
-            foreach (var header in headers)
+            foreach (var type in types)
             {
-                newProps.Add(new Property { Name = header }); // not including Type yet
+                int max = 0;
+                string typeName = string.Empty;
+                foreach (var myType in type.TypeVotes)
+                {
+                    if (myType.Value > max)
+                    {
+                        max = myType.Value;
+                        typeName = type.TypeNameConvert(myType.Key);
+                    }
+                }
+                newProps.Add(new Property { Name = type.ColumnName, Type = typeName }); 
             }
 
             return newProps;
