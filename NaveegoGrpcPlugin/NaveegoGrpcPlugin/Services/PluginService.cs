@@ -10,6 +10,7 @@ using System.IO;
 using CsvHelper;
 using Google.Protobuf.Collections;
 using System.Text.Json;
+using System.ComponentModel;
 
 namespace NaveegoGrpcPlugin
 {
@@ -17,6 +18,7 @@ namespace NaveegoGrpcPlugin
     {
         private readonly ILogger<PluginService> _logger;
         private List<Schema> discoveredSchemas;
+        private string errorMsg;
         private readonly char delimiter;
         public PluginService(ILogger<PluginService> logger)
         {
@@ -190,13 +192,24 @@ namespace NaveegoGrpcPlugin
                         foreach (KeyValuePair<string, object> col in record)
                         {
                             string typeName = NameToTypeConvert(props.Where(w => w.Name == col.Key.ToString()).Select(s => s.Type).FirstOrDefault());
-                            var convertedToType = Convert.ChangeType(col.Value, Type.GetType(typeName));
-                            if (convertedToType == null)
-                                isInvalidRecord = true;
-                            fullRecord.Add(convertedToType);
-                        }
 
+                            var canIt = TypeDescriptor.GetConverter(Type.GetType(typeName));
+                            if (CanConvert(col.Value, Type.GetType(typeName)))
+                            {
+                                var convertedToType = Convert.ChangeType(col.Value, Type.GetType(typeName));
+                                if (convertedToType == null)
+                                    isInvalidRecord = true;
+                                fullRecord.Add(convertedToType);
+                            }
+                            else
+                            {
+                                fullRecord.Add(col.Value.ToString());
+                            }
+
+
+                        }
                         var data = JsonSerializer.Serialize(fullRecord);
+                        //var newPublishRecord = PrepareRecordForPublish(record, props);
                         await responseStream.WriteAsync(new PublishRecord { Data = data, Invalid = isInvalidRecord });
                     }
 
@@ -206,6 +219,53 @@ namespace NaveegoGrpcPlugin
             {
                 _logger.LogError(e, "Error opening csv");
             }
+        }
+
+        public PublishRecord PrepareRecordForPublish(dynamic record, RepeatedField<Property> props)
+        {
+            string data = string.Empty;
+            bool isInvalidRecord = false;
+            errorMsg = string.Empty;
+            var fullRecord = new List<dynamic>();
+
+            foreach (KeyValuePair<string, object> col in record)
+            {
+                string typeName = NameToTypeConvert(props.Where(w => w.Name == col.Key.ToString()).Select(s => s.Type).FirstOrDefault());
+                if (CanConvert(col.Value, Type.GetType(typeName)))
+                {
+                    var convertedToType = Convert.ChangeType(col.Value, Type.GetType(typeName));
+                    fullRecord.Add(convertedToType);
+                }
+                else
+                {
+                    isInvalidRecord = true;
+                }
+            }
+
+            if (isInvalidRecord)
+            {
+                fullRecord = null;
+            }
+
+            data = JsonSerializer.Serialize(fullRecord);
+
+            return new PublishRecord { Data = data, Invalid = isInvalidRecord, Error = errorMsg };
+        }
+
+        public bool CanConvert(object objToCast, Type type)
+        {
+            try
+            {
+                Convert.ChangeType(objToCast, type);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMsg = ex.Message;
+                _logger.LogWarning(ex, "Could not convert to desired data type.");
+                return false;
+            }
+
         }
 
         public static string NameToTypeConvert(string name)
@@ -225,8 +285,6 @@ namespace NaveegoGrpcPlugin
                 default:
                     return "System.String";
             }
-
-
         }
 
     }

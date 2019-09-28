@@ -21,7 +21,7 @@ namespace NaveegoGrpcPlugin
                .MinimumLevel.Information()
                .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
                .Enrich.FromLogContext()
-               //.WriteTo.Console()
+ //              .WriteTo.Console()
                .WriteTo.File("PluginLog.txt", rollingInterval: RollingInterval.Day)
                .CreateLogger();
 
