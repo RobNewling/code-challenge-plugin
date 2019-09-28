@@ -105,12 +105,14 @@ namespace NaveegoGrpcPlugin
             else if (type == typeof(decimal))
                 return "number";
             else if (type == typeof(DateTime))
-                return "datetame";
+                return "datetime";
             else if (type == typeof(bool))
                 return "boolean";
             else
                 return string.Empty;
         }
+
+       
 
     }
 

@@ -185,14 +185,19 @@ namespace NaveegoGrpcPlugin
 
                     foreach (var record in csv.GetRecords<dynamic>())
                     {
-                        var fullRecord = new List<string>();
+                        var fullRecord = new List<dynamic>();
+                        bool isInvalidRecord = false;
                         foreach (KeyValuePair<string, object> col in record)
                         {
-                            fullRecord.Add(col.Value.ToString());
+                            string typeName = NameToTypeConvert(props.Where(w => w.Name == col.Key.ToString()).Select(s => s.Type).FirstOrDefault());
+                            var convertedToType = Convert.ChangeType(col.Value, Type.GetType(typeName));
+                            if (convertedToType == null)
+                                isInvalidRecord = true;
+                            fullRecord.Add(convertedToType);
                         }
 
                         var data = JsonSerializer.Serialize(fullRecord);
-                        await responseStream.WriteAsync(new PublishRecord { Data = data, Invalid = false });
+                        await responseStream.WriteAsync(new PublishRecord { Data = data, Invalid = isInvalidRecord });
                     }
 
                 }
@@ -201,6 +206,27 @@ namespace NaveegoGrpcPlugin
             {
                 _logger.LogError(e, "Error opening csv");
             }
+        }
+
+        public static string NameToTypeConvert(string name)
+        {
+            switch (name)
+            {
+                case "integer":
+                    return "System.Int32";
+                case "number":
+                    return "System.Decimal";
+                case "datetime":
+                    return "System.DateTime";
+                case "boolean":
+                    return "System.Boolean";
+                case "string":
+                    return "System.String";
+                default:
+                    return "System.String";
+            }
+
+
         }
 
     }
