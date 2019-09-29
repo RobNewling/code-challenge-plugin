@@ -64,9 +64,9 @@ namespace NaveegoGrpcPlugin
                 }
 
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Error looking for files in glob");
+                _logger.LogError(ex, "Error looking for files in glob");
             }
 
         }
@@ -87,12 +87,10 @@ namespace NaveegoGrpcPlugin
                     discoveredSchemas.Add(CreateSchema(filePath, props));
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Error opening csv");
+                _logger.LogError(ex, "Error opening csv");
             }
-
-
         }
 
         private Schema CheckForExistingSchema(List<Property> props)
@@ -125,16 +123,10 @@ namespace NaveegoGrpcPlugin
 
         private List<Property> CreateProperties(string filePath)
         {
-            string[] headers;
             List<Types> types = new List<Types>();
             using (var reader = new StreamReader(filePath))
             using (var csv = new CsvReader(reader))
             {
-                csv.Read();
-                csv.ReadHeader();
-
-                headers = csv.Context.HeaderRecord;
-                
                 foreach (var record in csv.GetRecords<dynamic>())
                 {
                     
@@ -219,11 +211,6 @@ namespace NaveegoGrpcPlugin
                     fullRecord.Add(null);
                     isInvalidRecord = true;
                 }
-            }
-
-            if (isInvalidRecord)
-            {
-                //fullRecord = null;
             }
 
             data = JsonSerializer.Serialize(fullRecord);
