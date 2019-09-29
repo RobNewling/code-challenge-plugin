@@ -10,7 +10,7 @@ using System.IO;
 using CsvHelper;
 using Google.Protobuf.Collections;
 using System.Text.Json;
-using System.ComponentModel;
+using System.Globalization;
 
 namespace NaveegoGrpcPlugin
 {
@@ -210,7 +210,15 @@ namespace NaveegoGrpcPlugin
                 if (CanConvert(col.Value, Type.GetType(typeName)))
                 {
                     var convertedToType = Convert.ChangeType(col.Value, Type.GetType(typeName));
-                    fullRecord.Add(convertedToType);
+                    if(convertedToType.GetType() == typeof(DateTime))
+                    {
+                        fullRecord.Add(ToRfc3339String((DateTime)convertedToType));
+                    }
+                    else
+                    {
+                        fullRecord.Add(convertedToType);
+                    }
+                    
                 }
                 else
                 {
@@ -257,6 +265,12 @@ namespace NaveegoGrpcPlugin
                 default:
                     return "System.String";
             }
+        }
+
+        //source/adapted from https://sebnilsson.com/blog/c-datetime-to-rfc3339-iso-8601/
+        public static string ToRfc3339String(DateTime dateTime)
+        {
+            return dateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fffZ", DateTimeFormatInfo.InvariantInfo);
         }
 
     }
