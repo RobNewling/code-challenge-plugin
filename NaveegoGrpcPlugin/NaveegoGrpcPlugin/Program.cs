@@ -14,6 +14,7 @@ namespace NaveegoGrpcPlugin
 {
     public class Program
     {
+
         public static int Main(string[] args)
         {
 
@@ -50,6 +51,7 @@ namespace NaveegoGrpcPlugin
         private static void ProcessExitHandler(object sender, EventArgs e)
         {
             Console.WriteLine("Shutting down");
+            
         }
 
         // Additional configuration is required to successfully run gRPC on macOS.

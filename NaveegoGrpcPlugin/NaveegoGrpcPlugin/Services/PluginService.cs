@@ -187,37 +187,15 @@ namespace NaveegoGrpcPlugin
 
                     foreach (var record in csv.GetRecords<dynamic>())
                     {
-                        var fullRecord = new List<dynamic>();
-                        bool isInvalidRecord = false;
-                        foreach (KeyValuePair<string, object> col in record)
-                        {
-                            string typeName = NameToTypeConvert(props.Where(w => w.Name == col.Key.ToString()).Select(s => s.Type).FirstOrDefault());
-
-                            var canIt = TypeDescriptor.GetConverter(Type.GetType(typeName));
-                            if (CanConvert(col.Value, Type.GetType(typeName)))
-                            {
-                                var convertedToType = Convert.ChangeType(col.Value, Type.GetType(typeName));
-                                if (convertedToType == null)
-                                    isInvalidRecord = true;
-                                fullRecord.Add(convertedToType);
-                            }
-                            else
-                            {
-                                fullRecord.Add(col.Value.ToString());
-                            }
-
-
-                        }
-                        var data = JsonSerializer.Serialize(fullRecord);
-                        //var newPublishRecord = PrepareRecordForPublish(record, props);
-                        await responseStream.WriteAsync(new PublishRecord { Data = data, Invalid = isInvalidRecord });
+                        var newPublishRecord = PrepareRecordForPublish(record, props);
+                        await responseStream.WriteAsync(newPublishRecord); 
                     }
 
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Error opening csv");
+                _logger.LogError(ex, "Error opening csv");
             }
         }
 
@@ -238,13 +216,14 @@ namespace NaveegoGrpcPlugin
                 }
                 else
                 {
+                    fullRecord.Add(null);
                     isInvalidRecord = true;
                 }
             }
 
             if (isInvalidRecord)
             {
-                fullRecord = null;
+                //fullRecord = null;
             }
 
             data = JsonSerializer.Serialize(fullRecord);
