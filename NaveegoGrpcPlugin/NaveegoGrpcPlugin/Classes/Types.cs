@@ -83,8 +83,7 @@ namespace NaveegoGrpcPlugin
         private void VoteForBoolean(string value)
         {
             bool booleanCheck;
-            bool.TryParse(value, out booleanCheck);
-            if (booleanCheck)
+            if (bool.TryParse(value, out booleanCheck))
             {
                 TypeVotes[typeof(bool)] = TypeVotes[typeof(bool)] + 1;
                 typeFound = true;
