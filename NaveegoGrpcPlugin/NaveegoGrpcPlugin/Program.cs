@@ -14,6 +14,7 @@ namespace NaveegoGrpcPlugin
 {
     public class Program
     {
+
         public static int Main(string[] args)
         {
 
@@ -21,7 +22,6 @@ namespace NaveegoGrpcPlugin
                .MinimumLevel.Information()
                .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
                .Enrich.FromLogContext()
-               //.WriteTo.Console()
                .WriteTo.File("PluginLog.txt", rollingInterval: RollingInterval.Day)
                .CreateLogger();
 
@@ -50,10 +50,9 @@ namespace NaveegoGrpcPlugin
         private static void ProcessExitHandler(object sender, EventArgs e)
         {
             Console.WriteLine("Shutting down");
+            
         }
 
-        // Additional configuration is required to successfully run gRPC on macOS.
-        // For instructions on how to configure Kestrel and gRPC clients on macOS, visit https://go.microsoft.com/fwlink/?linkid=2099682
         public static IHostBuilder CreateHostBuilder(string[] args, IConfiguration configuration) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
