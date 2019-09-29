@@ -123,13 +123,36 @@ namespace NaveegoGrpcPlugin
 
         private List<Property> CreateProperties(string filePath)
         {
+            List<Types> scannedColumns = ScanForTypes(filePath);
+
+            List<Property> newProps = new List<Property>();
+            foreach (var column in scannedColumns)
+            {
+                int max = 0;
+                string typeName = string.Empty;
+                foreach (var candidate in column.TypeVotes)
+                {
+                    if (candidate.Value > max)
+                    {
+                        max = candidate.Value;
+                        typeName = column.TypeNameConvert(candidate.Key);
+                    }
+                }
+                newProps.Add(new Property { Name = column.ColumnName, Type = typeName });
+            }
+
+            return newProps;
+        }
+
+        private static List<Types> ScanForTypes(string filePath)
+        {
             List<Types> types = new List<Types>();
             using (var reader = new StreamReader(filePath))
             using (var csv = new CsvReader(reader))
             {
                 foreach (var record in csv.GetRecords<dynamic>())
                 {
-                    
+
                     foreach (KeyValuePair<string, object> col in record)
                     {
                         var colName = col.Key.ToString();
@@ -143,31 +166,14 @@ namespace NaveegoGrpcPlugin
                         {
                             types.Add(new Types(colName, field));
                         }
-                        
+
                     }
 
                 }
             }
 
-            List<Property> newProps = new List<Property>();
-            foreach (var type in types)
-            {
-                int max = 0;
-                string typeName = string.Empty;
-                foreach (var myType in type.TypeVotes)
-                {
-                    if (myType.Value > max)
-                    {
-                        max = myType.Value;
-                        typeName = type.TypeNameConvert(myType.Key);
-                    }
-                }
-                newProps.Add(new Property { Name = type.ColumnName, Type = typeName }); 
-            }
-
-            return newProps;
+            return types;
         }
-
 
         private async Task GetDataToStream(string filePath, RepeatedField<Property> props, IServerStreamWriter<PublishRecord> responseStream)
         {
