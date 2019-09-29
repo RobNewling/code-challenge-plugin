@@ -29,13 +29,16 @@ namespace NaveegoGrpcPlugin
 
         public override Task<DiscoverResponse> Discover(DiscoverRequest request, ServerCallContext context)
         {
+            _logger.LogInformation("Received request to discover schemas.");
             var examine = request.Settings.FileGlob;
             LookForFiles(examine);
             return Task.FromResult(new DiscoverResponse { Schemas = { discoveredSchemas } });
+
         }
 
         public override async Task Publish(PublishRequest request, IServerStreamWriter<PublishRecord> responseStream, ServerCallContext context)
         {
+            _logger.LogInformation("Received request to publish records.");
             var filePaths = request.Schema.Settings.Split(delimiter);
             var props = request.Schema.Properties;
             foreach (var file in filePaths)
@@ -89,7 +92,7 @@ namespace NaveegoGrpcPlugin
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error opening csv");
+                _logger.LogError(ex, "Error investigating file.");
             }
         }
 
@@ -126,6 +129,7 @@ namespace NaveegoGrpcPlugin
             List<Types> scannedColumns = ScanForTypes(filePath);
 
             List<Property> newProps = new List<Property>();
+
             foreach (var column in scannedColumns)
             {
                 int max = 0;
@@ -144,32 +148,41 @@ namespace NaveegoGrpcPlugin
             return newProps;
         }
 
-        private static List<Types> ScanForTypes(string filePath)
+        private List<Types> ScanForTypes(string filePath)
         {
             List<Types> types = new List<Types>();
-            using (var reader = new StreamReader(filePath))
-            using (var csv = new CsvReader(reader))
+            try
             {
-                foreach (var record in csv.GetRecords<dynamic>())
-                {
+                _logger.LogInformation("Scanning for types on {file}", filePath);
 
-                    foreach (KeyValuePair<string, object> col in record)
+                using (var reader = new StreamReader(filePath))
+                using (var csv = new CsvReader(reader))
+                {
+                    foreach (var record in csv.GetRecords<dynamic>())
                     {
-                        var colName = col.Key.ToString();
-                        var field = col.Value.ToString();
-                        if (types.Where(w => w.ColumnName == colName).Any())
+
+                        foreach (KeyValuePair<string, object> col in record)
                         {
-                            var colType = types.Where(w => w.ColumnName == colName).First();
-                            colType.DetectTypes(field);
-                        }
-                        else
-                        {
-                            types.Add(new Types(colName, field));
+                            var colName = col.Key.ToString();
+                            var field = col.Value.ToString();
+                            if (types.Where(w => w.ColumnName == colName).Any())
+                            {
+                                var colType = types.Where(w => w.ColumnName == colName).First();
+                                colType.DetectTypes(field);
+                            }
+                            else
+                            {
+                                types.Add(new Types(colName, field));
+                            }
+
                         }
 
                     }
-
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while scanning CSVs.");
             }
 
             return types;
@@ -179,6 +192,7 @@ namespace NaveegoGrpcPlugin
         {
             try
             {
+                _logger.LogInformation("Publishing records for {file}", filePath);
                 using (var reader = new StreamReader(filePath))
                 using (var csv = new CsvReader(reader))
                 {
@@ -193,7 +207,7 @@ namespace NaveegoGrpcPlugin
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error opening csv");
+                _logger.LogError(ex, "Error publishing records.");
             }
         }
 
@@ -204,30 +218,38 @@ namespace NaveegoGrpcPlugin
             errorMsg = string.Empty;
             var fullRecord = new List<dynamic>();
 
-            foreach (KeyValuePair<string, object> col in record)
+            try
             {
-                string typeName = NameToTypeConvert(props.Where(w => w.Name == col.Key.ToString()).Select(s => s.Type).FirstOrDefault());
-                if (CanConvert(col.Value, Type.GetType(typeName)))
+                foreach (KeyValuePair<string, object> col in record)
                 {
-                    var convertedToType = Convert.ChangeType(col.Value, Type.GetType(typeName));
-                    if(convertedToType.GetType() == typeof(DateTime))
+                    string typeName = NameToTypeConvert(props.Where(w => w.Name == col.Key.ToString()).Select(s => s.Type).FirstOrDefault());
+                    if (CanConvert(col.Value, Type.GetType(typeName)))
                     {
-                        fullRecord.Add(ToRfc3339String((DateTime)convertedToType));
+                        var convertedToType = Convert.ChangeType(col.Value, Type.GetType(typeName));
+                        if(convertedToType.GetType() == typeof(DateTime))
+                        {
+                            fullRecord.Add(ToRfc3339String((DateTime)convertedToType));
+                        }
+                        else
+                        {
+                            fullRecord.Add(convertedToType);
+                        }
+                    
                     }
                     else
                     {
-                        fullRecord.Add(convertedToType);
+                        fullRecord.Add(null);
+                        isInvalidRecord = true;
                     }
-                    
                 }
-                else
-                {
-                    fullRecord.Add(null);
-                    isInvalidRecord = true;
-                }
-            }
 
-            data = JsonSerializer.Serialize(fullRecord);
+                data = JsonSerializer.Serialize(fullRecord);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error preparing to publish record.");
+            }
 
             return new PublishRecord { Data = data, Invalid = isInvalidRecord, Error = errorMsg };
         }

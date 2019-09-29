@@ -8,9 +8,7 @@ namespace NaveegoGrpcPlugin
     public class Types
     {
         public string ColumnName { get; set; }
-
         public Dictionary<Type, int> TypeVotes { get; private set; }
-
         private bool typeFound;
 
         public Types(string columnName, string value)
